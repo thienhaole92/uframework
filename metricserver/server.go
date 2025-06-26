@@ -25,6 +25,7 @@ type Option struct {
 
 type Server struct {
 	gracePeriod time.Duration
+	address     string
 	Echo        *echo.Echo
 	Server      *http.Server
 }
@@ -38,8 +39,10 @@ func New(opts *Option) *Server {
 	})
 	ech.GET(opts.MetricPath, echoprometheus.NewHandler())
 
+	address := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
+
 	server := &http.Server{
-		Addr:                         net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port)),
+		Addr:                         address,
 		Handler:                      ech,
 		ReadTimeout:                  opts.ReadTimeout,
 		WriteTimeout:                 opts.WriteTimeout,
@@ -57,6 +60,7 @@ func New(opts *Option) *Server {
 
 	return &Server{
 		gracePeriod: opts.GracePeriod,
+		address:     address,
 		Echo:        ech,
 		Server:      server,
 	}
@@ -64,7 +68,7 @@ func New(opts *Option) *Server {
 
 func (s *Server) Run() {
 	go func() {
-		log.Info().Msg("start server")
+		log.Info().Str("address", s.address).Msg("start metrics server")
 
 		if err := s.Server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			log.Panic().Err(err).Msg("failed to start server")

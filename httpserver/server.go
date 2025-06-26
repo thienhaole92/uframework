@@ -31,6 +31,7 @@ type Option struct {
 }
 
 type Server struct {
+	address     string
 	gracePeriod time.Duration
 	Echo        *echo.Echo
 	Server      *http.Server
@@ -54,12 +55,13 @@ func New(opts *Option) *Server {
 	}
 
 	root := ech.Group("")
+	address := net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
 
 	server := &http.Server{
 		Handler:                      ech,
 		ReadTimeout:                  opts.ReadTimeout,
 		WriteTimeout:                 opts.WriteTimeout,
-		Addr:                         net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port)),
+		Addr:                         address,
 		DisableGeneralOptionsHandler: false,
 		TLSConfig:                    nil,
 		ReadHeaderTimeout:            0,
@@ -74,6 +76,7 @@ func New(opts *Option) *Server {
 
 	return &Server{
 		gracePeriod: opts.GracePeriod,
+		address:     address,
 		Echo:        ech,
 		Server:      server,
 		Root:        root,
@@ -82,7 +85,7 @@ func New(opts *Option) *Server {
 
 func (s *Server) Run() {
 	go func() {
-		log.Info().Msg("start server")
+		log.Info().Str("address", s.address).Msg("start http server")
 
 		if err := s.Server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			log.Panic().Err(err).Msg("failed to start server")

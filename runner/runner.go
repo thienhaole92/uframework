@@ -129,3 +129,11 @@ func WithRestAPIService(hook func(*container.Container)) Option {
 		log.Info().Msg("rest api service registered")
 	}
 }
+
+func WithConsumers(hook func(*container.Container)) Option {
+	return func(r *Runner) {
+		hook(r.container)
+
+		log.Info().Msg("consumers registered")
+	}
+}
