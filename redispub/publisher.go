@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	defaultPublishTimeout   = 5 * time.Second
-	defaultMaxStreamEntries = 1
+	defaultPublishTimeout = 5 * time.Second
 )
 
 var (
@@ -34,10 +33,6 @@ type RedisPublisher struct {
 }
 
 func New(redisClient goredis.UniversalClient, opts Options) (*RedisPublisher, error) {
-	if opts.MaxStreamEntries <= 0 {
-		opts.MaxStreamEntries = defaultMaxStreamEntries
-	}
-
 	redisStreamPublisher, err := redisstream.NewPublisher(
 		redisstream.PublisherConfig{
 			Client:        redisClient,
@@ -73,8 +68,10 @@ func (p *RedisPublisher) PublishToTopic(topic string, messageContents ...string)
 		return fmt.Errorf("%w to topic %s: %w", ErrPublishFailed, topic, err)
 	}
 
-	if err := p.redisClient.XTrimMaxLen(ctx, topic, p.maxStreamEntries).Err(); err != nil {
-		return fmt.Errorf("%w for topic %s: %w", ErrStreamTrimFailed, topic, err)
+	if p.maxStreamEntries > 0 {
+		if err := p.redisClient.XTrimMaxLen(ctx, topic, p.maxStreamEntries).Err(); err != nil {
+			return fmt.Errorf("%w for topic %s: %w", ErrStreamTrimFailed, topic, err)
+		}
 	}
 
 	return nil
